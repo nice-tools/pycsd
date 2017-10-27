@@ -34,11 +34,9 @@ def _extract_positions(inst, picks):
     system, n_channels = inst.info['description'].split('/')
     dir_path = os.path.dirname(os.path.realpath(__file__))
     if inst.info['description'].split('/')[0] == 'egi':
-        if int(n_channels) != 256:
-            raise ValueError('CSD for egi systems is only '
-                             'defined for 256 electrodes')
         montage = read_montage(op.join(dir_path, 'templates/EGI_256.csd'))
-        pos = montage.pos
+        pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
+        pos = montage.pos[pos_picks]
     else:
         logger.info('Using 10-5 locations for CSD')
         montage = read_montage(op.join(dir_path, 'templates/standard_10-5.csd'))
