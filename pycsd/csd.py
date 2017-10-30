@@ -40,8 +40,7 @@ def _extract_positions(inst, picks):
     else:
         logger.info('Using 10-5 locations for CSD')
         montage = read_montage(op.join(dir_path, 'templates/standard_10-5.csd'))
-        names = [x.decode('utf-8') for x in montage.ch_names]
-        pos_picks = [names.index(x) for x in inst.ch_names]
+        pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
         pos = montage.pos[pos_picks]
     return pos[picks if picks is not None else Ellipsis]
 
