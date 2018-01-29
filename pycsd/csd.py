@@ -34,7 +34,15 @@ def _extract_positions(inst, picks):
     system, n_channels = inst.info['description'].split('/')
     dir_path = os.path.dirname(os.path.realpath(__file__))
     if inst.info['description'].split('/')[0] == 'egi':
-        montage = read_montage(op.join(dir_path, 'templates/EGI_256.csd'))
+        n_eeg = inst.info['description'].split('/')[1]
+        if n_eeg == '256':
+            logger.info('Using EGI 256 locations for CSD')
+            montage = read_montage(op.join(dir_path, 'templates/EGI_256.csd'))
+        elif n_eeg == '128':
+            logger.info('Using EGI 128 locations for CSD')
+            montage = read_montage(op.join(dir_path, 'templates/EGI_128.csd'))
+        else:
+            raise ValueError('CSD Lookup not defined for egi/{}'.format(n_eeg))
         pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
         pos = montage.pos[pos_picks]
     else:
@@ -170,6 +178,8 @@ def epochs_compute_csd(inst, picks=None, g_matrix=None, h_matrix=None,
     G = _calc_g(np.dot(pos, pos.T)) if g_matrix is None else g_matrix
     H = _calc_h(np.dot(pos, pos.T)) if h_matrix is None else h_matrix
     G_precomputed = _prepare_G(G, lambda2)
+    n_jobs = min(len(inst), n_jobs)
+    logger.info('Using {} jobs'.format(n_jobs))
     if isinstance(out, BaseEpochs):
         parallel, my_csd, _ = parallel_func(_compute_csd, n_jobs)
         data = np.asarray(parallel(my_csd(e[picks],
