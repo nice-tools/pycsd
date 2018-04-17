@@ -58,4 +58,4 @@ if __name__ == "__main__":
                        'Operating System :: MacOS'],
           platforms='any',
           packages=['pycsd'],
-          package_data={'pycsd': []})
+          package_data={'pycsd': ['templates/*.csd']})
