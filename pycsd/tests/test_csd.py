@@ -21,8 +21,9 @@ from numpy.testing import assert_almost_equal
 from nose.tools import assert_equal
 import mne
 from mne import create_info
-from mne.channels import read_montage
 from mne.io import RawArray
+
+from packaging import version
 
 from pycsd import epochs_compute_csd
 
@@ -47,7 +48,13 @@ data = np.r_[data, data[-1:]]
 data[-1].fill(0)
 info = create_info(ch_names=ch_names, ch_types=ch_types, sfreq=sfreq)
 raw = RawArray(data=data, info=info)
-montage = read_montage('GSN-HydroCel-257')
+
+if version.parse(mne.__version__) > version.parse('0.19'):
+    montage = mne.channels.make_standard_montage(
+        'GSN-HydroCel-257', head_size=0.085)
+else:
+    montage = mne.channels.read_montage('GSN-HydroCel-257')
+
 raw.set_montage(montage)
 raw.info['description'] = 'egi/256'
 

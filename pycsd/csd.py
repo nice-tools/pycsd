@@ -19,13 +19,37 @@ import os.path as op
 from numpy.polynomial.legendre import legval
 from scipy.linalg import inv
 
+import mne
 from mne import pick_types, pick_info
 from mne.utils import logger
 from mne.epochs import BaseEpochs
 from mne.evoked import Evoked
 from mne.parallel import parallel_func
-from mne.channels import read_montage
 
+from packaging import version
+
+if version.parse(mne.__version__) >= version.parse('0.20.dev0'):
+    _mne_20_api = True
+    logger.info('Using MNE with API > 0.19')
+else:
+    _mne_20_api = False
+    logger.info('Using MNE with API <= 0.19')
+
+def _get_montage_pos(montage, picks):
+    if _mne_20_api is True:
+        pos = np.array([x['r'] for x in montage.dig])
+        pos -= np.mean(pos, axis=0)
+        pos = 0.085 * (pos / np.linalg.norm(pos, axis=1).mean())
+    else:
+        pos = montage.pos
+    return pos[picks]
+
+def _read_csd_montage(fname):
+    if _mne_20_api is True:
+        montage = mne.channels.read_custom_montage(fname, head_size=None)
+    else:
+        montage = mne.channels.read_montage(fname)
+    return montage
 
 def _extract_positions(inst, picks):
     """Aux function to get positions via Montage
@@ -37,19 +61,19 @@ def _extract_positions(inst, picks):
         n_eeg = inst.info['description'].split('/')[1]
         if n_eeg == '256':
             logger.info('Using EGI 256 locations for CSD')
-            montage = read_montage(op.join(dir_path, 'templates/EGI_256.csd'))
+            montage = _read_csd_montage(op.join(dir_path, 'templates/EGI_256.csd'))
         elif n_eeg == '128':
             logger.info('Using EGI 128 locations for CSD')
-            montage = read_montage(op.join(dir_path, 'templates/EGI_128.csd'))
+            montage = _read_csd_montage(op.join(dir_path, 'templates/EGI_128.csd'))
         else:
             raise ValueError('CSD Lookup not defined for egi/{}'.format(n_eeg))
         pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
-        pos = montage.pos[pos_picks]
+        pos = _get_montage_pos(montage, pos_picks)
     else:
         logger.info('Using 10-5 locations for CSD')
-        montage = read_montage(op.join(dir_path, 'templates/standard_10-5.csd'))
+        montage = _read_csd_montage(op.join(dir_path, 'templates/standard_10-5.csd'))
         pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
-        pos = montage.pos[pos_picks]
+        pos = _get_montage_pos(montage, pos_picks)
     return pos[picks if picks is not None else Ellipsis]
 
 
@@ -178,9 +202,10 @@ def epochs_compute_csd(inst, picks=None, g_matrix=None, h_matrix=None,
     G = _calc_g(np.dot(pos, pos.T)) if g_matrix is None else g_matrix
     H = _calc_h(np.dot(pos, pos.T)) if h_matrix is None else h_matrix
     G_precomputed = _prepare_G(G, lambda2)
-    n_jobs = min(len(inst), n_jobs)
-    logger.info('Using {} jobs'.format(n_jobs))
+
     if isinstance(out, BaseEpochs):
+        n_jobs = min(len(inst), n_jobs)
+        logger.info('Using {} jobs'.format(n_jobs))
         parallel, my_csd, _ = parallel_func(_compute_csd, n_jobs)
         data = np.asarray(parallel(my_csd(e[picks],
                                    G_precomputed=G_precomputed,
