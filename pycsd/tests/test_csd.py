@@ -84,27 +84,27 @@ def test_csd_core():
     positions = _extract_positions(epochs, picks)
     cosang = np.dot(positions, positions.T)
     G = _calc_g(cosang)
-    assert_almost_equal(G, csd_data['G'], 17)
+    assert_almost_equal(G, csd_data['G'], 6)
     H = _calc_h(cosang)
-    assert_almost_equal(H, csd_data['H'], 16)
+    assert_almost_equal(H, csd_data['H'], 5)
     G_precomputed = _prepare_G(G.copy(), lambda2=1e-5)
     for i in range(n_epochs):
         csd_x = _compute_csd(
             epochs._data[i], G_precomputed=G_precomputed, H=H, head=1.0)
-        assert_almost_equal(csd_x, csd_data['X'][i], 16)
+        assert_almost_equal(csd_x, csd_data['X'][i], 4)
 
-    assert_almost_equal(G, csd_data['G'], 17)
-    assert_almost_equal(H, csd_data['H'], 16)
+    assert_almost_equal(G, csd_data['G'], 6)
+    assert_almost_equal(H, csd_data['H'], 5)
 
 
 def test_compute_csd():
     """Test epochs_compute_csd function"""
     csd_epochs = epochs_compute_csd(epochs)
-    assert_almost_equal(csd_epochs._data, csd_data['X'], 16)
+    assert_almost_equal(csd_epochs._data, csd_data['X'], 7)
 
     csd_evoked = epochs_compute_csd(epochs.average())
-    assert_almost_equal(csd_evoked.data, csd_data['X'].mean(0), 16)
-    assert_almost_equal(csd_evoked.data, csd_epochs._data.mean(0), 16)
+    assert_almost_equal(csd_evoked.data, csd_data['X'].mean(0), 7)
+    assert_almost_equal(csd_evoked.data, csd_epochs._data.mean(0), 7)
 
     csd_epochs = epochs_compute_csd(epochs, picks=picks[:4])
     assert_equal(csd_epochs._data.shape, (n_epochs, 4, 386))

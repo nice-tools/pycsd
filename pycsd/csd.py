@@ -38,8 +38,6 @@ else:
 def _get_montage_pos(montage, picks):
     if _mne_20_api is True:
         pos = np.array([x['r'] for x in montage.dig])
-        pos -= np.mean(pos, axis=0)
-        pos = 0.085 * (pos / np.linalg.norm(pos, axis=1).mean())
     else:
         pos = montage.pos
     return pos[picks]
@@ -61,19 +59,20 @@ def _extract_positions(inst, picks):
         n_eeg = inst.info['description'].split('/')[1]
         if n_eeg == '256':
             logger.info('Using EGI 256 locations for CSD')
-            montage = _read_csd_montage(op.join(dir_path, 'templates/EGI_256.csd'))
+            montage = _read_csd_montage(
+                op.join(dir_path, 'templates/EGI_256.csd'))
         elif n_eeg == '128':
             logger.info('Using EGI 128 locations for CSD')
-            montage = _read_csd_montage(op.join(dir_path, 'templates/EGI_128.csd'))
+            montage = _read_csd_montage(
+                op.join(dir_path, 'templates/EGI_128.csd'))
         else:
             raise ValueError('CSD Lookup not defined for egi/{}'.format(n_eeg))
-        pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
-        pos = _get_montage_pos(montage, pos_picks)
     else:
         logger.info('Using 10-5 locations for CSD')
-        montage = _read_csd_montage(op.join(dir_path, 'templates/standard_10-5.csd'))
-        pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
-        pos = _get_montage_pos(montage, pos_picks)
+        montage = _read_csd_montage(
+            op.join(dir_path, 'templates/standard_10-5.csd'))
+    pos_picks = [montage.ch_names.index(x) for x in inst.ch_names]
+    pos = _get_montage_pos(montage, pos_picks)
     return pos[picks if picks is not None else Ellipsis]
 
 
