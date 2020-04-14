@@ -53,15 +53,17 @@ def _extract_positions(inst, picks):
     """Aux function to get positions via Montage
        The mongate is specified in the info['description'] field
     """
-    system, n_channels = inst.info['description'].split('/')
+    if '/' in inst.info['description']:
+        system, n_channels = inst.info['description'].split('/')
+    else:
+        system = 'default'
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    if inst.info['description'].split('/')[0] == 'egi':
-        n_eeg = inst.info['description'].split('/')[1]
-        if n_eeg == '256':
+    if system == 'egi':
+        if n_channels == '256':
             logger.info('Using EGI 256 locations for CSD')
             montage = _read_csd_montage(
                 op.join(dir_path, 'templates/EGI_256.csd'))
-        elif n_eeg == '128':
+        elif n_channels == '128':
             logger.info('Using EGI 128 locations for CSD')
             montage = _read_csd_montage(
                 op.join(dir_path, 'templates/EGI_128.csd'))
